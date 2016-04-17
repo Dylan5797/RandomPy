@@ -39,7 +39,7 @@ def average(l):
     return sum(l) / len(l)
 def meter(num, denom, size=50):
     t = int(num / denom * size)
-    return '| ' + ('#' * t) + (' ' * (size-t)) + ' | ' + str(int(num / denom * 100)) + '% | ' + str(num) + ' / ' + str(denom)
+    return '| ' + ('#' * t) + (' ' * (size-t)) + ' | ' + (str(round(num / denom * 100)) + '%').rjust(4, ' ') + ' | ' + str(num).rjust(len(str(denom)), ' ') + ' / ' + str(denom)
 
 def proc_seed(seed):
     modifiers = list(str(int(seed))) 

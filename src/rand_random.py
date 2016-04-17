@@ -25,21 +25,40 @@ import time as _time
 import platform as _platform
 import math as _math
 
-if _platform.system() != 'Windows':
-    print('Invalid platform. Must be Windows.')
-    input()
-    _sys.exit()
 
-try:
-    import rand_sources
-    import rand_utils
-except:
+def basic_error_report(err):
     fn = _time.strftime('error-%y-%m-%d %H.%M.%S.txt')
     x = open(fn, 'w')
-    x.write('A Dependency failed. Please download the entire zip file and do not move any files, as this can cause this error message.\n\n' + _traceback.format_exc())
+    x.write(err)
     x.close()
-    _os.startfile(fn)
-    _sys.exit()
+    if __name__ == "__main__":
+        _os.startfile(fn)
+    _sys.exit()   
+
+
+
+try:
+    import importlib.util
+except:
+    basic_error_report('Failed to import importlib.util, probably because python version is not 3.5')
+
+try:
+    path = _os.path.dirname(_os.path.realpath(__file__))
+except:
+    basic_error_report('Could not locate self')
+
+def import_path(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    globals()[name] = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(globals()[name])
+    return globals()[name]
+
+
+try:
+    import_path('rand_sources', path + '\\rand_sources.py')
+    import_path('rand_utils', path + '\\rand_utils.py')
+except:
+    basic_error_report('A Dependency failed. Please download the entire zip file and do not move any files, as this can cause this error message.\n\n' + _traceback.format_exc())
 
 def test(tests, tries, src, gui=False):
     t = []
@@ -61,11 +80,9 @@ def test(tests, tries, src, gui=False):
     return t
 
 def experiment(source, tests, tries, gui=False):
-    if type(source) == rand_sources.InitializingSource:
-        source.init()
+    source.init()
     res = test(tests, tries, source, gui)
-    if type(source) == rand_sources.InitializingSource:
-        source.dels()
+    source.dels()
     cp = ''
     obj = []
     cp = cp + "RandomPy Experiment Log\n"
@@ -98,16 +115,11 @@ def ui_main():
             dev = True
             break
         try:
-            local_func = getattr(rand_sources, lss)
-            if type(local_func) == rand_sources.InitializingSource:
-                local_func.init()
-            a = local_func.get()
-            if type(local_func) == rand_sources.InitializingSource:
-                local_func.dels()
+            settings['local_func'] = getattr(rand_sources, lss)
+            if (type(settings['local_func']) == rand_sources.Source) or (type(settings['local_func']) == rand_sources.InitializingSource):
+                break
         except:
             print('Error: the class is invalid does not exist.')
-        else:
-            break
     if dev:
         while True:
             q = input('RandPy> ')

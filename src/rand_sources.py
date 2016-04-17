@@ -28,11 +28,14 @@ class Source:
         self.name = name
         self.packages = packages_required
         self.random = function
+    def init(self):
         for x in self.packages:
             try:
                 globals()[x] = __import__(x)
             except ImportError:
                 raise MissingDependency(x, 'missing package "' + x + '"')
+    def dels(self):
+        pass
     def get(self):
         return self.random()
 
@@ -40,8 +43,14 @@ class Source:
 class InitializingSource(Source):
     def __init__(self, init, dels, *args):
         Source.__init__(self, *args)
-        self.init = lambda: init(self)
-        self.dels = lambda: dels(self)
+        def _init_self():
+            Source.init(self)
+            init(self)
+        def _dels_self():
+            Source.dels(self)
+            dels(self)
+        self.dels = _dels_self
+        self.init = _init_self
     def get(self):
         return self.random(self)
 
@@ -83,3 +92,5 @@ random_mic = InitializingSource(src_random_mic_init, src_random_mic_del, 'Microp
 random_py = Source('Python', ['random'], src_random_py)
 random_time = Source('Timestamp', ['time'], src_random_time)
 random_urandom = Source('os.urandom()', ['os'], src_random_urandom)
+
+RAND_SOURCES = [random_mic, random_py, random_time, random_urandom]
