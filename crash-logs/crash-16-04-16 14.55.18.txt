@@ -1,0 +1,18 @@
+RandomPy Crash Report
+Sat April 16, 14:55:18
+Report bugs at https://github.com/Dylan5797/RandomPy/issues
+------------------------------------------------------------
+
+TypeError: 'list' object cannot be interpreted as an integer
+
+
+Traceback (most recent call last):
+  File "C:\Users\djbes\Desktop\SciFair 2016\Random Program\src\rand_random.py", line 121, in user_interface
+    ui_main()
+  File "C:\Users\djbes\Desktop\SciFair 2016\Random Program\src\rand_random.py", line 115, in ui_main
+    experiment(settings['local_func'], settings['local_tests'], settings['local_tries'], gui=True)
+  File "C:\Users\djbes\Desktop\SciFair 2016\Random Program\src\rand_random.py", line 65, in experiment
+    res = test(tests, tries, source, gui)
+  File "C:\Users\djbes\Desktop\SciFair 2016\Random Program\src\rand_random.py", line 48, in test
+    for x in range(0, tests):
+TypeError: 'list' object cannot be interpreted as an integer

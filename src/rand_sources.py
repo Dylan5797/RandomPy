@@ -24,39 +24,62 @@ class MissingDependency(BaseException):
         BaseException.__init__(self, *args, **kwargs)
 
 class Source:
-    def __init__(self, packages_required, function):
+    def __init__(self, name, packages_required, function):
+        self.name = name
         self.packages = packages_required
         self.random = function
-    def get(self):
         for x in self.packages:
             try:
                 globals()[x] = __import__(x)
             except ImportError:
                 raise MissingDependency(x, 'missing package "' + x + '"')
+    def get(self):
         return self.random()
 
 
+class InitializingSource(Source):
+    def __init__(self, init, dels, *args):
+        Source.__init__(self, *args)
+        self.init = lambda: init(self)
+        self.dels = lambda: dels(self)
+    def get(self):
+        return self.random(self)
 
-def src_random_mic():
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, output=True, frames_per_buffer=8)
-    sd = sum(array.array('h', stream.read(16)).tolist())
-    stream.close()
+
+################################################################################################################################
+    
+def src_random_mic(self):
+    m = array.array('h', self.stream.read(1024)).tolist()
+    sd = sum(m)
     return abs(sd)
 
+def src_random_mic_init(self):
+    self.pa = pyaudio.PyAudio()
+    self.stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, output=True, frames_per_buffer=1024)
+
+def src_random_mic_del(self):
+    self.stream.close()
+    self.pa.terminate()
+    del self.stream
+    del self.pa
+
+################################################################################################################################
 def src_random_py():
     return random.uniform(1, 100)
 
+################################################################################################################################
 def src_random_time():
     return int(time.time())
 
+################################################################################################################################
 def src_random_urandom():
     return sum([x for x in os.urandom(15)])
 
 
 
+################################################################################################################################
 
-random_mic = Source(['pyaudio', 'array'], src_random_mic)
-random_py = Source(['random'], src_random_py)
-random_time = Source(['time'], src_random_time)
-random_urandom = Source(['os'], src_random_urandom)
+random_mic = InitializingSource(src_random_mic_init, src_random_mic_del, 'Microphone', ['pyaudio', 'array'], src_random_mic)
+random_py = Source('Python', ['random'], src_random_py)
+random_time = Source('Timestamp', ['time'], src_random_time)
+random_urandom = Source('os.urandom()', ['os'], src_random_urandom)

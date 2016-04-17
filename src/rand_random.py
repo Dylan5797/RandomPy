@@ -49,9 +49,9 @@ def test(tests, tries, src, gui=False):
         occ = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         tx = []
         for y in range(0, tries):
-            num = rand_utils.proc_seed(src.get())
+            num = rand_utils.proc_seed_md5(src.get())
             tx.append(num)
-            occ[int(num * 10.5)] += 1
+            occ[int(num * 10.49999999999999999)] += 1
             tm = rand_utils.meter((x * tries) + y + 1, tests * tries)
             if gui:
                 if lu + 0.05 < _time.time():
@@ -62,20 +62,26 @@ def test(tests, tries, src, gui=False):
     return t
 
 def experiment(source, tests, tries, gui=False):
+    if type(source) == rand_sources.InitializingSource:
+        source.init()
     res = test(tests, tries, source, gui)
+    if type(source) == rand_sources.InitializingSource:
+        source.dels()
     cp = ''
     obj = []
     cp = cp + "RandomPy Experiment Log\n"
     cp = cp + "RandomPy is Copyright (c) Dylan Beswick 2016. You may (re)distribute this log (or parts of it) noncommercially as long as this notice is kept in all copies of this log.\n"
     cp = cp + "-" * 80 + '\n'
+    cp = cp + "Source: " + source.name + '\n'
+    cp = cp + "Overall Distribution Offset: " + str(rand_utils.average([res[x][1] for x in range(0, tests)])) + '\n'
     for x in range(0, tests):
         obj.append({'avg': res[x][0], 'dist_offset':res[x][1], 'occurances':','.join([str(x) for x in res[x][2]]), 'occ_dump':','.join([str(x) for x in res[x][3]])})
-        cp = cp + ('#' * 40) + (' Test %s:' % (x + 1)) + ('#' * 40) + '\n'
+        cp = cp + ('#' * 40) + (' Test %s: ' % (x + 1)) + ('#' * 40) + '\n'
         cp = cp + 'Average: ' + str(res[x][0]) + '\n'
         cp = cp + 'Average Distribution Offset: ' + str(res[x][1]) + '\n'
         cp = cp + 'Rounded Outcomes:' + '\n'
         for y in range(0, 11):
-            cp = cp + str(y) + rand_utils.meter(res[x][2][y], tries, 100) + '\n'
+            cp = cp + str(y).rjust(2, '0') + ' ' + rand_utils.meter(res[x][2][y], tries, 100) + '\n'
         cp = cp + '\n\n'
     ts = rand_utils.timestamp()
     rand_utils.dump_lzma(obj, ts)
@@ -86,9 +92,7 @@ def experiment(source, tests, tries, gui=False):
 def ui_main():
     print('RandomPy\nCopyright (c) Dylan Beswick 2016')
     dev = False
-    local_tests = 10
-    local_tries = 100000
-    local_func = rand_sources.random_py
+    settings = {'local_tests':10, 'local_tries':100000, 'local_func':rand_sources.random_py}
     while True:
         lss = input('Please enter a source class:\n')
         if lss == 'devMode':
@@ -96,9 +100,12 @@ def ui_main():
             break
         try:
             local_func = getattr(rand_sources, lss)
+            if type(local_func) == rand_sources.InitializingSource:
+                local_func.init()
             a = local_func.get()
+            if type(local_func) == rand_sources.InitializingSource:
+                local_func.dels()
         except:
-            _trackback.print_exc()
             print('Error: the class is invalid does not exist.')
         else:
             break
@@ -108,26 +115,37 @@ def ui_main():
             if q.lower() == 'quit':
                 break
             try:
-                exec(q)
+                settings['local_' + q.split()[0]] = ' '.join(q.split()[1:])
             except:
                 _traceback.print_exc()
-    if type(local_func) == str:
-        local_func = getattr(rand_sources, lss)
+    if type(settings['local_func']) == str:
+        settings['local_func'] = getattr(rand_sources, settings['local_func'])
     print('Running tests...')
     _time.sleep(2)
-    try:
-        experiment(local_func, local_tests, local_tries, gui=True)
-    except:
-        _traceback.print_exc()
+    experiment(settings['local_func'], int(settings['local_tests']), int(settings['local_tries']), gui=True)
     input('\n\n## Tests Done. Press Return ##')
 
 
 def user_interface():
     try:
         ui_main()
-    except:
-        error_text = """
-"""
+    except BaseException as e:
+        tm = _time.localtime()
+        error_text = "RandomPy Crash Report\n"
+        error_text += ['Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun'][tm.tm_wday] + ' '
+        error_text += ['January', 'Febuary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][tm.tm_mon - 1] + ' '
+        error_text += str(tm.tm_mday) + ', '
+        error_text += _time.strftime('%T\n')
+        error_text += "Report bugs at https://github.com/Dylan5797/RandomPy/issues\n"
+        error_text += "-" * 60 + "\n" * 2
+        error_text += e.__class__.__name__ + ": " + str(e) + '\n\n\n'
+        error_text += ''.join(_traceback.format_exception(type(e), e, e.__traceback__))
+        fn = _os.path.dirname(_os.path.dirname(_os.path.realpath(__file__))) + '\\crash-logs\\' + _time.strftime('crash-%y-%m-%d %H.%M.%S.txt')
+        fl = open(fn, 'w')
+        fl.write(error_text)
+        fl.close()
+        _os.startfile(fn)
 
+        
 if __name__ == "__main__":
     user_interface()

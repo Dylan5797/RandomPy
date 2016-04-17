@@ -73,7 +73,7 @@ def timestamp(ff=True):
 
 def dump_lzma(data, ts=None):
     ts = ts or timestamp()
-    f = open(parent_dir + '\\logs\\' + ts + '-dump.lzma', 'wb')
+    f = open(parent_dir + '\\logs\\' + ts + '-dump.json.lzma', 'wb')
     f.write(_lzma.compress(_json.dumps(data).encode()))
     f.close()
 
