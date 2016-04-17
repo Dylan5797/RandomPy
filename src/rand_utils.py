@@ -27,6 +27,12 @@ import time as _time
 
 parent_dir = _os.path.dirname(_os.path.dirname(_os.path.realpath(__file__)))
 
+if not _os.path.isdir(parent_dir + '\\crash-logs'):
+    _os.makedirs(parent_dir + '\\crash-logs')
+if not _os.path.isdir(parent_dir + '\\logs'):
+    _os.makedirs(parent_dir + '\\logs')
+
+
 def clear():
     _os.system('cls')
 def average(l):

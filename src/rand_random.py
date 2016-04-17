@@ -36,11 +36,10 @@ try:
 except:
     fn = _time.strftime('error-%y-%m-%d %H.%M.%S.txt')
     x = open(fn, 'w')
-    x.write('Dependency failed. Please download the entire zip file and do not move any files, as this can cause this error message.\n')
+    x.write('A Dependency failed. Please download the entire zip file and do not move any files, as this can cause this error message.\n\n' + _traceback.format_exc())
     x.close()
     _os.startfile(fn)
-
-
+    _sys.exit()
 
 def test(tests, tries, src, gui=False):
     t = []
