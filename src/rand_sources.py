@@ -58,13 +58,18 @@ class InitializingSource(Source):
 ################################################################################################################################
     
 def src_random_mic(self):
-    m = array.array('h', self.stream.read(1024)).tolist()
-    sd = sum(m)
+    if len(self.stored) == 0:
+        t = array.array('h', self.stream.read(1024)).tolist()
+        cs = 32
+        self.stored.extend([t[i:i + cs] for i in range(0, len(t), cs)])
+    sd = sum(self.stored[0])
+    del self.stored[0]
     return abs(sd)
 
 def src_random_mic_init(self):
+    self.stored = []
     self.pa = pyaudio.PyAudio()
-    self.stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, output=True, frames_per_buffer=1024)
+    self.stream = self.pa.open(format=pyaudio.paInt16, channels=1, rate=int(self.pa.get_device_info_by_index(0)['defaultSampleRate']), input=True, output=True, frames_per_buffer=1024)
 
 def src_random_mic_del(self):
     self.stream.close()
@@ -88,7 +93,7 @@ def src_random_urandom():
 
 ################################################################################################################################
 
-random_mic = InitializingSource(src_random_mic_init, src_random_mic_del, 'Microphone', ['pyaudio', 'array'], src_random_mic)
+random_mic = InitializingSource(src_random_mic_init, src_random_mic_del, 'Microphone', ['pyaudio', 'array', 'time'], src_random_mic)
 random_py = Source('Python', ['random'], src_random_py)
 random_time = Source('Timestamp', ['time'], src_random_time)
 random_urandom = Source('os.urandom()', ['os'], src_random_urandom)

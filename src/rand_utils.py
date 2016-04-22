@@ -37,11 +37,36 @@ def clear():
     _os.system('cls')
 def average(l):
     return sum(l) / len(l)
-def meter(num, denom, size=50):
+def meter(num, denom, size=50, wrapper=int):
     t = int(num / denom * size)
-    return '| ' + ('#' * t) + (' ' * (size-t)) + ' | ' + (str(round(num / denom * 100)) + '%').rjust(4, ' ') + ' | ' + str(num).rjust(len(str(denom)), ' ') + ' / ' + str(denom)
+    return '| ' + ('#' * t) + (' ' * (size-t)) + ' | ' + (str(wrapper(num / denom * 100)) + '%').rjust(4, ' ') + ' | ' + str(num).rjust(len(str(denom)), ' ') + ' / ' + str(denom)
 
-def proc_seed(seed):
+def timestamp(ff=True):
+    if ff:
+        return _time.strftime('%y-%m-%d %H.%M.%S')
+    else:
+        return _time.strftime('%y/%m/%d %H:%M:%S')
+
+def dump_lzma(data, ts=None):
+    ts = ts or timestamp()
+    fn = parent_dir + '\\logs\\' + ts + '-dump.json.lzma'
+    f = open(fn, 'wb')
+    f.write(_lzma.compress(_json.dumps(data).encode()))
+    f.close()
+    return fn
+
+def dump_txt(data, ts=None):
+    ts = ts or timestamp()
+    fn = parent_dir + '\\logs\\' + ts + '-report.txt'
+    f = open(fn, 'w')
+    f.write(data)
+    f.close()
+    return fn
+
+##############################################################################################################################
+
+
+def algorithm_default(seed):
     modifiers = list(str(int(seed))) 
     OLD = seed
     if seed == 0:
@@ -64,27 +89,15 @@ def proc_seed(seed):
         if x == '0':
             continue
         seed = seed + (1 / int(x))
-    return abs(_math.fmod(seed * 417.7, 5) / 4.9)
+    return _math.fmod(abs(_math.fmod(seed * 417.7, 5) / 4.9), 1)
 
-def proc_seed_md5(seed):
+def algorithm_md5(seed):
     h = _hashlib.md5(str(seed).encode())
     h.update(''.join(['acegikmoqz'[int(x)] for x in str(seed) if x in '0123456789']).encode())
-    return int(h.hexdigest(), 16) / 340282366920938463463374607431768211455
+    return _math.fmod(int(h.hexdigest(), 16) / 340282366920938463463374607431768211455, 1)
 
-def timestamp(ff=True):
-    if ff:
-        return _time.strftime('%y-%m-%d %H.%M.%S')
-    else:
-        return _time.strftime('%y/%m/%d %H:%M:%S')
+def algorithm_sha256(seed):
+    h = _hashlib.sha256(str(seed).encode())
+    h.update(''.join(['acegikmoqz'[int(x)] for x in str(seed) if x in '0123456789']).encode())
+    return _math.fmod(int(h.hexdigest(), 16) / 115792089237316195423570985008687907853269984665640564039457584007913129639935, 1)
 
-def dump_lzma(data, ts=None):
-    ts = ts or timestamp()
-    f = open(parent_dir + '\\logs\\' + ts + '-dump.json.lzma', 'wb')
-    f.write(_lzma.compress(_json.dumps(data).encode()))
-    f.close()
-
-def dump_txt(data, ts=None):
-    ts = ts or timestamp()
-    f = open(parent_dir + '\\logs\\' + ts + '-report.txt', 'w')
-    f.write(data)
-    f.close()

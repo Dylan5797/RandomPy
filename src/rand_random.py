@@ -54,34 +54,51 @@ def import_path(name, path):
     return globals()[name]
 
 
+global G_SETTINGS
+G_SETTINGS = {'logging.dump_lzma':'false'}
+
+args = _sys.argv[1:]
+
+try:
+    assert int(len(args) % 2) == 0
+except:
+    basic_error_report('Invalid Settings args input')
+
+try:
+    for x in range(0, len(args)):
+        if int(x % 2) == 0:
+            G_SETTINGS[args[x]] = args[x+1]
+except:
+    basic_error_report('Error parsing args\n\n' + _traceback.format_exc())
+
 try:
     import_path('rand_sources', path + '\\rand_sources.py')
     import_path('rand_utils', path + '\\rand_utils.py')
 except:
     basic_error_report('A Dependency failed. Please download the entire zip file and do not move any files, as this can cause this error message.\n\n' + _traceback.format_exc())
 
-def test(tests, tries, src, gui=False):
+def test(tests, alogrithm, tries, src, gui=False):
     t = []
     lu = _time.time()
     for x in range(0, tests):
         occ = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         tx = []
         for y in range(0, tries):
-            num = rand_utils.proc_seed_md5(src.get())
+            num = alogrithm(src.get())
             tx.append(num)
-            occ[int(num * 10.49999999999999999)] += 1
+            occ[int(num * 10)] += 1
             tm = rand_utils.meter((x * tries) + y + 1, tests * tries)
             if gui:
                 if lu + 0.05 < _time.time():
                     print('\r' + tm, end='')
                     lu = _time.time()
-        t.append((rand_utils.average(tx), abs(0.5 - rand_utils.average(tx)), occ, tx))
+        t.append((rand_utils.average(tx), abs(0.5 - rand_utils.average(tx)), occ[:10], tx))
     print('\r' + rand_utils.meter(tests * tries - 1, tests * tries), end='')
     return t
 
-def experiment(source, tests, tries, gui=False):
+def experiment(source, algorithm, tests, tries, gui=False):
     source.init()
-    res = test(tests, tries, source, gui)
+    res = test(tests, algorithm, tries, source, gui)
     source.dels()
     cp = ''
     obj = []
@@ -89,57 +106,94 @@ def experiment(source, tests, tries, gui=False):
     cp = cp + "RandomPy is Copyright (c) Dylan Beswick 2016. You may (re)distribute this log (or parts of it) noncommercially as long as this notice is kept in all copies of this log.\n"
     cp = cp + "-" * 80 + '\n'
     cp = cp + "Source: " + source.name + '\n'
+    cp = cp + "Algorithm: " + algorithm.__name__ + '\n'
+    cp = cp + "Tests: " + str(tests * tries) + '\n'
+    cp = cp + "Divisions: " + str(tests) + '\n'
+    cp = cp + "Tries per Division: " + str(tries) + '\n'
     cp = cp + "Overall Distribution Offset: " + str(rand_utils.average([res[x][1] for x in range(0, tests)])) + '\n'
+    cp = cp + 'Overall Greatest Outcome Difference: ' + str(rand_utils.average([((((max(res[x][2]) / (tries)) - (min(res[x][2]) / (tries))) * 100)) for x in range(0, tests)])) + '%\n'
     for x in range(0, tests):
-        obj.append({'avg': res[x][0], 'dist_offset':res[x][1], 'occurances':','.join([str(x) for x in res[x][2]]), 'occ_dump':','.join([str(x) for x in res[x][3]])})
+        obj.append({'avg': res[x][0], 'dist_offset':res[x][1], 'occurances':[x for x in res[x][2]], 'occ_dump':','.join([str(x) for x in res[x][3]])})
         cp = cp + ('#' * 40) + (' Test %s: ' % (x + 1)) + ('#' * 40) + '\n'
         cp = cp + 'Average: ' + str(res[x][0]) + '\n'
         cp = cp + 'Average Distribution Offset: ' + str(res[x][1]) + '\n'
-        cp = cp + 'Rounded Outcomes:' + '\n'
-        for y in range(0, 11):
-            cp = cp + str(y).rjust(2, '0') + ' ' + rand_utils.meter(res[x][2][y], tries, 100) + '\n'
+        cp = cp + 'Greatest Outcome Difference: ' + str((((max(res[x][2]) / (tries)) - (min(res[x][2]) / (tries))) * 100)) + '%\n'
+        cp = cp + 'Outcomes:' + '\n'
+        for y in range(0, 10):
+            cp = cp + str(y).rjust(2, '0') + ' ' + rand_utils.meter(res[x][2][y], tries, 50, round) + '\n'
         cp = cp + '\n\n'
     ts = rand_utils.timestamp()
-    rand_utils.dump_lzma(obj, ts)
-    rand_utils.dump_txt(cp, ts)
+    if G_SETTINGS['logging.dump_lzma'].lower() == 'true':
+        rand_utils.dump_lzma(obj, ts)
+    fn = rand_utils.dump_txt(cp, ts)
     if gui:
         print('\r' + rand_utils.meter(tests * tries, tests * tries))
+    return (cp, fn)
 
 def ui_main():
     print('RandomPy\nCopyright (c) Dylan Beswick 2016')
     dev = False
-    settings = {'local_tests':10, 'local_tries':100000, 'local_func':rand_sources.random_py}
+    settings = {'tests':10, 'tries':100000, 'func':rand_sources.random_py, 'algorithm':rand_utils.algorithm_default}
     while True:
         lss = input('Please enter a source class:\n')
-        if lss == 'devMode':
+        if lss == 'custom':
             dev = True
             break
         try:
-            settings['local_func'] = getattr(rand_sources, lss)
-            if (type(settings['local_func']) == rand_sources.Source) or (type(settings['local_func']) == rand_sources.InitializingSource):
+            settings['func'] = getattr(rand_sources, lss)
+            if (type(settings['func']) == rand_sources.Source) or (type(settings['func']) == rand_sources.InitializingSource):
                 break
         except:
             print('Error: the class is invalid does not exist.')
+    while True:
+        lss = input('Please enter an algorithm function name (blank for default):\n')
+        if lss == 'custom':
+            dev = True
+            break
+        if lss.strip() == '':
+            break
+        try:
+            settings['algorithm'] = getattr(rand_utils, lss)
+            assert type(settings['algorithm'](42)) == float
+            break
+        except:
+            print('Error: the function is invalid does not exist.')
     if dev:
         while True:
             q = input('RandPy> ')
             if q.lower() == 'quit':
                 break
             try:
-                settings['local_' + q.split()[0]] = ' '.join(q.split()[1:])
+                settings[q.split()[0]] = ' '.join(q.split()[1:])
             except:
                 _traceback.print_exc()
-    if type(settings['local_func']) == str:
-        settings['local_func'] = getattr(rand_sources, settings['local_func'])
+    if type(settings['func']) == str:
+        settings['func'] = getattr(rand_sources, settings['func'])
+    if type(settings['algorithm']) == str:
+        settings['algorithm'] = getattr(rand_utils, settings['algorithm'])
     print('Running tests...')
     _time.sleep(2)
-    experiment(settings['local_func'], int(settings['local_tests']), int(settings['local_tries']), gui=True)
-    input('\n\n## Tests Done. Press Return ##')
+    txt, fn = experiment(settings['func'], settings['algorithm'], int(settings['tests']), int(settings['tries']), gui=True)
+    while True:
+        f = input('Print results? [Y/N]: ').lower()[0]
+        if f == 'y':
+            pr = True
+            break
+        elif f == 'n':
+            pr = False
+            break
+    if pr:
+        for x in txt.split('\n'):
+            print(x)
+    input('\n\n## Press Return ##\n')
+    _os.startfile(fn)
 
 
 def user_interface():
     try:
         ui_main()
+    except KeyboardInterrupt:
+        pass
     except BaseException as e:
         tm = _time.localtime()
         error_text = "RandomPy Crash Report\n"

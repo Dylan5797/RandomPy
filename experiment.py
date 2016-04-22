@@ -3,6 +3,7 @@ import platform
 import sys
 import traceback
 import os
+import subprocess
 
 errors = []
 warns = []
@@ -33,7 +34,7 @@ def import_path(name, path):
     spec.loader.exec_module(globals()[name])
     return globals()[name]
 
-srcs = ['rand_random', 'rand_utils', 'rand_sources']
+srcs = ['rand_random', 'rand_utils', 'rand_sources', 'ini']
 
 for x in srcs:
     try:
@@ -65,5 +66,24 @@ if len(errors) > 0:
     input()
     sys.exit()
 
-input('\n\nPress return to begin\n')
-os.startfile(path + '\\src\\rand_random.py')
+if len(warns) > 0:
+    input('\n\nPress return to begin\n')
+
+if not os.path.isfile(path + '\\settings.ini'):
+    itxt = """[Logging]
+# Dumps a lzma encoded JSON with all the outcomes
+Dump LZMA = false
+"""
+    i = ini.ini(itxt)
+    i.dump(open(path + '\\settings.ini', 'w'))
+
+i = ini.ini(open(path + '\\settings.ini'))
+settings_args = []
+for x in i:
+    for y in i[x]:
+        settings_args.append(x.lower().replace(' ', '_') + '.' + y.lower().replace(' ', '_'))
+        settings_args.append(i[x][y].replace(' ', '_'))
+args = [sys.executable, path + '\\src\\rand_random.py']
+args.extend(settings_args)
+
+subprocess.Popen(args, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
