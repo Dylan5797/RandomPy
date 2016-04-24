@@ -101,7 +101,7 @@ def experiment(source, algorithm, tests, tries, gui=False):
     res = test(tests, algorithm, tries, source, gui)
     source.dels()
     cp = ''
-    obj = []
+    obj = {'source':source.name, 'algorithm':algorithm.__name__, 'tests':tests * tries, 'divisions':tests, 'division_tries':tries, 'global_greatest_outcome_difference':rand_utils.average([((((max(res[x][2]) / (tries)) - (min(res[x][2]) / (tries))) * 100)) for x in range(0, tests)]), 'global_average':rand_utils.average([res[x][0] for x in range(0, tests)]), 'global_dist_offset':rand_utils.average([res[x][1] for x in range(0, tests)]), 'sets':[]}
     cp = cp + "RandomPy Experiment Log\n"
     cp = cp + "RandomPy is Copyright (c) Dylan Beswick 2016. You may (re)distribute this log (or parts of it) noncommercially as long as this notice is kept in all copies of this log.\n"
     cp = cp + "-" * 80 + '\n'
@@ -112,8 +112,9 @@ def experiment(source, algorithm, tests, tries, gui=False):
     cp = cp + "Tries per Division: " + str(tries) + '\n'
     cp = cp + "Overall Distribution Offset: " + str(rand_utils.average([res[x][1] for x in range(0, tests)])) + '\n'
     cp = cp + 'Overall Greatest Outcome Difference: ' + str(rand_utils.average([((((max(res[x][2]) / (tries)) - (min(res[x][2]) / (tries))) * 100)) for x in range(0, tests)])) + '%\n'
+    cp = cp + 'Average: ' + str(rand_utils.average([res[x][0] for x in range(0, tests)])) + '\n'
     for x in range(0, tests):
-        obj.append({'avg': res[x][0], 'dist_offset':res[x][1], 'occurances':[x for x in res[x][2]], 'occ_dump':','.join([str(x) for x in res[x][3]])})
+        obj['sets'].append({'avg': res[x][0], 'dist_offset':res[x][1], 'occurances':[x for x in res[x][2]], 'occ_dump':res[x][3], 'greatest_outcome_difference':(((max(res[x][2]) / (tries)) - (min(res[x][2]) / (tries))) * 100)})
         cp = cp + ('#' * 40) + (' Test %s: ' % (x + 1)) + ('#' * 40) + '\n'
         cp = cp + 'Average: ' + str(res[x][0]) + '\n'
         cp = cp + 'Average Distribution Offset: ' + str(res[x][1]) + '\n'
