@@ -108,7 +108,7 @@ def find_best_source(exclusions=[]):
         for x in avg_dist:
             if best_diff[0] == x[0]:
                 diff_ad = [best_diff[0], best_diff[1] + float(x[1])]
-        if diff_ad > dist_ad:
+        if diff_ad[1] > dist_ad[1]:
             best_source = dist_ad[0]
         else:
             best_source = diff_ad[0]
@@ -128,8 +128,17 @@ def rank_sources():
         i = open(path + '\\logs\\' + s, 'w')
         i.write(''.join(li))
         i.close()
-        if num != len(os.listdir(path + '\\logs')):
-            recurse(num + 1, exc + [s])
+        if s.startswith('['):
+            nn = s
+            for x in range(0, len(nn)):
+                if nn[x] == ']':
+                    nn = '[' + str(num) + nn[x:]
+                    break
+        else:
+            nn = '[' + str(num) + '] ' + s
+        os.rename(path + '\\logs\\' + s, path + '\\logs\\' + nn)
+        if num != len([x for x in os.listdir(path + '\\logs') if os.path.splitext(x)[1] == '.txt']):
+            recurse(num + 1, exc + [nn])
     recurse(1)
 
 
@@ -138,6 +147,7 @@ if __name__ == "__main__":
     try:
         rank_sources()
     except:
+        traceback.print_exc()
         print('\n\nError: please make sure logs are not corrupt.')
     else:
         print('Done')

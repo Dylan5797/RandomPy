@@ -63,6 +63,14 @@ def dump_txt(data, ts=None):
     f.close()
     return fn
 
+def dump_csv(data, ts=None):
+    ts = ts or timestamp()
+    fn = parent_dir + '\\logs\\' + ts + '-scan.csv'
+    f = open(fn, 'w')
+    f.write(data)
+    f.close()
+    return fn
+
 ##############################################################################################################################
 
 

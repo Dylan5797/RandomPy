@@ -3,3 +3,4 @@ logs
 crash-logs
 *.pyc
 *.lzma
+fix.py
