@@ -79,11 +79,11 @@ def find_best_source(exclusions=[]):
             dist_ds = True
             diff_ds = True
             for y in cnt:
-                if ('overall distribution offset' in y.lower()) and dist_ds and (not (x in exclusions)):
-                    avg_dist.append([x, y[29:-1]])
+                if ('overall absolute deviation' in y.lower()) and dist_ds and (not (x in exclusions)):
+                    avg_dist.append([x, str(float(y[28:-1]) * 100)])
                     dist_ds = False
-                if ('overall greatest outcome difference' in y.lower()) and diff_ds and (not (x in exclusions)):
-                    avg_diff.append([x, y[37:-2]])
+                if ('overall frequency distribution range' in y.lower()) and diff_ds and (not (x in exclusions)):
+                    avg_diff.append([x, y[38:-2]])
                     diff_ds = False
 
     best_dist = [avg_dist[0][0], float(avg_dist[0][1])]
